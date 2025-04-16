@@ -549,16 +549,17 @@ void
 fillpstat(pstatTable *pstat)
 {
   struct proc *p;
+  //I think I can do something like p++, i++ but I'm tired of remaking this lab so this is fine.
   int i = 0;
-
   acquire(&ptable.lock);
+	//Information get
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 	(*pstat)[i].tickets = p->tickets;
 	(*pstat)[i].ticks = p->ticks;
 	(*pstat)[i].inuse = (p->state != UNUSED);
 	(*pstat)[i].pid = p->pid;
 	safestrcpy((*pstat)[i].name, p->name, sizeof(p->name));
-
+	//switch statement to give the state a better name aligned with the struct
 	switch (p->state) {
 	  case EMBRYO:
             (*pstat)[i].state = 'E'; break;
@@ -575,7 +576,19 @@ fillpstat(pstatTable *pstat)
     	}
 	i++;
   }
+  //release
   release(&ptable.lock);
+}
+
+int
+settickets(int number)
+{
+  struct proc *c = myproc();
+  //quick check
+  if (number < 10 || c == 0) return -1;
+  //updates tickets
+  c->tickets = number;
+  return 0;
 }
 
 

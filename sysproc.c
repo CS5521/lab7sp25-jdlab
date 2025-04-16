@@ -90,6 +90,8 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+//only way i could get this to work it seems so ugly however
 extern void fillpstat(pstatTable *);
 int
 sys_getpinfo(void)
@@ -103,3 +105,21 @@ sys_getpinfo(void)
   fillpstat(p);
   return 0;
 }
+
+extern int settickets(int number);
+int
+sys_settickets(void)
+{
+  int number;
+  //grab and check
+  if(argint(0, &number) < 0) return -1;
+
+  return settickets(number);
+} 
+
+
+
+
+
+
+
