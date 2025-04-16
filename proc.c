@@ -587,7 +587,9 @@ settickets(int number)
   //quick check
   if (number < 10 || c == 0) return -1;
   //updates tickets
+  acquire(&ptable.lock);
   c->tickets = number;
+  release(&ptable.lock);
   return 0;
 }
 

@@ -129,7 +129,6 @@ ps(void)
 int
 settickets(int number)
 {
-  return syscall(SYS_settickets, number);
 }
 
 
