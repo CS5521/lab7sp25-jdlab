@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "pstat.h"
 
 struct {
   struct spinlock lock;
@@ -17,7 +18,7 @@ static struct proc *initproc;
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
-
+extern void fillpstat(pstatTable *);
 static void wakeup1(void *chan);
 
 void
@@ -126,6 +127,8 @@ userinit(void)
   p = allocproc();
   
   initproc = p;
+  p->ticks = 0;
+  p->tickets = 10;
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
@@ -207,6 +210,14 @@ fork(void)
     if(curproc->ofile[i])
       np->ofile[i] = filedup(curproc->ofile[i]);
   np->cwd = idup(curproc->cwd);
+  
+  np->ticks = 0;
+  
+  if (curproc->tickets > 10) {
+	np->tickets = curproc->tickets;
+  } else {
+	np->tickets = 10;
+  }
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
@@ -532,3 +543,48 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+
+void
+fillpstat(pstatTable *pstat)
+{
+  struct proc *p;
+  int i = 0;
+
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+	(*pstat)[i].tickets = p->tickets;
+	(*pstat)[i].ticks = p->ticks;
+	(*pstat)[i].inuse = (p->state != UNUSED);
+	(*pstat)[i].pid = p->pid;
+	safestrcpy((*pstat)[i].name, p->name, sizeof(p->name));
+
+	switch (p->state) {
+	  case EMBRYO:
+            (*pstat)[i].state = 'E'; break;
+      	  case RUNNING:
+            (*pstat)[i].state = 'R'; break;
+      	  case RUNNABLE:
+            (*pstat)[i].state = 'A'; break;
+      	  case SLEEPING:
+            (*pstat)[i].state = 'S'; break;
+      	  case ZOMBIE:
+            (*pstat)[i].state = 'Z'; break;
+      	  default:
+            (*pstat)[i].state = '?';
+    	}
+	i++;
+  }
+  release(&ptable.lock);
+}
+
+
+
+
+
+
+
+
+
+
+
